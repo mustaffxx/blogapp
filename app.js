@@ -7,6 +7,10 @@
     const mongoose = require('mongoose')
     const session = require('express-session')
     const flash = require('connect-flash')
+    require('./models/Post')
+    const Post = mongoose.model('Post')
+    require('./models/Categorie')
+    const Categorie = mongoose.model('Categorie')
     // Routes import
     const admin = require('./routes/admin')
     
@@ -42,6 +46,60 @@
         app.use(express.static(path.join(__dirname, 'public')))
 
 // Routes
+    app.get('/', (req, res) => {
+        Post.find().populate('categorie').sort({date: 'desc'}).then((posts) => {
+            res.render('index', {posts: posts})
+        }).catch((error) => {
+            req.flash('error_msg', 'Error list post')
+            res.redirect('/404')
+        })        
+    })
+
+    app.get('/post/:slug', (req, res) => {
+        Post.findOne({slug: req.params.slug}).then((post) => {
+            if(post){
+                res.render('post/index', {post: post})
+            }else{
+                req.flash('error_msg', 'This post doenst exists')
+                res.redirect('/')
+            }
+        }).catch((error) => {
+            req.flash('error_msg', 'error')
+            res.redirect('/')
+        })
+    })
+
+    app.get('/categories', (req, res) => {
+        Categorie.find().then((categories) => {
+            res.render('categories/index', {categories: categories})
+        }).catch((error) => {
+            req.flash('error_msg', 'categories list error')
+            res.redirect('/')
+        })
+    })
+
+    app.get('/categories/:slug', (req, res) => {
+        Categorie.findOne({slug: req.params.slug}).then((categorie) => {
+            if(categorie){
+                Post.find({categorie: categorie._id}).then((posts) => {
+                    res.render('categories/posts', {posts: posts, categorie: categorie})
+                }).catch((error) => {
+                    req.flash('error_msg', 'list post error')
+                    res.redirect('/')
+                })
+            }else{
+                req.flash('error_msg', 'categorie doenst exists')
+                res.redirect('/')            }
+        }).catch((error) => {
+            req.flash('error_msg', 'categories list error')
+            res.redirect('/')
+        })
+    })
+
+    app.get('/404', (req, res) => {
+        res.send('Error 404!')
+    })
+
     app.use('/admin', admin)
 
 // Others
