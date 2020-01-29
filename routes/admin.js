@@ -13,7 +13,13 @@ router.get('/posts', (req, res) => {
 })
 
 router.get('/categories', (req, res) => {
-    res.render('admin/categories')
+    Categorie.find().sort({date: 'desc'}).then((categories => {
+        res.render('admin/categories', {categories: categories})
+    })).catch((error) => {
+        req.flash('error_msg', 'List categories error')
+        res.redirect('/admin')
+    })
+    
 })
 
 router.get('/categories/add', (req, res) => {
@@ -48,6 +54,43 @@ router.post('/categories/new', (req, res) => {
             res.redirect('/admin')
         })         
     }    
+})
+
+router.get('/categories/edit/:id', (req, res) => {
+    Categorie.findOne({_id: req.params.id}).then((categorie) => {
+        res.render('admin/editcategories', {categorie: categorie})
+    }).catch((error) => {
+        req.flash('error_msg', 'Categorie doenst exist')
+        res.redirect('/admin/categories')
+    })
+    
+})
+
+router.post('/categories/edit', (req, res) => {
+    Categorie.findOne({_id: req.body.id}).then((categorie) => {
+        categorie.name = req.body.name
+        categorie.slug = req.body.slug
+        categorie.save().then(() => {
+            req.flash('success_msg', 'Categorie edited success')
+            res.redirect('/admin/categories')
+        }).catch((error) => {
+            req.flash('error_msg', 'Categorie edit error')
+            res.redirect('/admin/categories')
+        })
+    }).catch((error) => {
+        req.flash('error_msg', 'Categorie edit error')
+        res.redirect('/admin/categories')
+    })
+})
+
+router.post('/categories/delete', (req, res) => {
+    Categorie.remove({_id: req.body.id}).then(() => {
+        req.flash('success_msg', 'Categorie deleted')
+        res.redirect('/admin/categories')
+    }).catch((error) => {
+        req.flash('error_msg', 'Categorie delete error')
+        res.redirect('/admin/categories')
+    })
 })
 
 module.exports = router
