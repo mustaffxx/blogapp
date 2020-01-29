@@ -11,8 +11,12 @@
     const Post = mongoose.model('Post')
     require('./models/Categorie')
     const Categorie = mongoose.model('Categorie')
+    const passport = require('passport')
+    require('./config/auth')(passport)
+    const db = require('./config/db')
     // Routes import
     const admin = require('./routes/admin')
+    const users = require('./routes/user')
     
 
 // Configs
@@ -22,11 +26,15 @@
             resave: true,
             saveUninitialized: true
         }))
+        app.use(passport.initialize())
+        app.use(passport.session())
         app.use(flash())
     // Middleware
         app.use((req, res, next) => {
             res.locals.success_msg = req.flash('success_msg')
             res.locals.error_msg = req.flash('error_msg')
+            res.locals.error = req.flash('error')
+            res.locals.user = req.user || null
             next()
         })
     // Body Parser
@@ -37,7 +45,7 @@
         app.set('view engine', 'handlebars')
     // Mongoose
         mongoose.Promise = global.Promise
-        mongoose.connect('mongodb://localhost/blogapp', {useNewUrlParser: true, useUnifiedTopology: true}).then(() => {
+        mongoose.connect(db.mongoURI, {useNewUrlParser: true, useUnifiedTopology: true}).then(() => {
             console.log('Mondodb connected')
         }).catch((error) => {
             console.log('Error: ' + error)
@@ -101,9 +109,10 @@
     })
 
     app.use('/admin', admin)
+    app.use('/users', users)
 
 // Others
-const PORT = 8080
+const PORT = process.env.PORT || 8080
 app.listen(PORT, () => {
     console.log('Server up!')
 })
